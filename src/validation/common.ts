@@ -2,6 +2,29 @@ import { ServerConfig, FilterSpec } from "../types.js";
 import { resolveDimension, resolveMetric, SUPPORTED_DATE_FIELDS } from "../schema/registry.js";
 import { estimateBucketCount, parseDateRange } from "../utils/time.js";
 
+const FIXED_OFFSET = /^[+-](?:0\d|1[0-4]):[0-5]\d$/;
+const TIME_ZONE_CHARS = /^[A-Za-z0-9_+\-/]{1,64}$/;
+
+/** Accept IANA zone names (validated by Intl), "UTC", or fixed offsets like +05:30. */
+export const assertTimeZone = (value: string): string => {
+  if (FIXED_OFFSET.test(value)) {
+    return value;
+  }
+
+  if (TIME_ZONE_CHARS.test(value)) {
+    try {
+      new Intl.DateTimeFormat("en-US", { timeZone: value });
+      return value;
+    } catch {
+      // fall through to the error below
+    }
+  }
+
+  throw new Error(
+    `Unsupported time_zone "${value}". Use an IANA zone such as America/Chicago, UTC, or an offset such as +05:30.`
+  );
+};
+
 export const assertAllowedIndex = (config: ServerConfig, index?: string): string => {
   const selected = index ?? config.defaultIndex;
   if (!config.allowedIndices.includes(selected)) {

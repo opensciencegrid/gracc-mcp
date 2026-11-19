@@ -108,17 +108,19 @@ export const createGraccMcpServer = (config: ServerConfig, client?: OpenSearchCl
     withErrorBoundary(getSchemaNotesSchema, getSchemaNotes, context)
   );
 
-  server.registerTool(
-    "run_safe_query",
-    {
-      title: "Run Safe Query",
-      description:
-        "Expert-only constrained raw _search access. Only allowlisted fields, filters, and aggregation types are accepted; scripts, writes, updates, and unsupported endpoints are rejected.",
-      inputSchema: runSafeQueryInputShape,
-      outputSchema: runSafeQueryOutputShape
-    },
-    withErrorBoundary(runSafeQuerySchema, runSafeQuery, context)
-  );
+  if (config.enableSafeQuery) {
+    server.registerTool(
+      "run_safe_query",
+      {
+        title: "Run Safe Query",
+        description:
+          "Expert-only constrained raw _search access. Requires a bounded ISO 8601 date range on EndTime or @timestamp. Only allowlisted fields, term/terms/range/bool clauses, and terms/date_histogram/sum/value_count aggregations are accepted; the request is rebuilt from those parts, so scripts and any other keys are rejected.",
+        inputSchema: runSafeQueryInputShape,
+        outputSchema: runSafeQueryOutputShape
+      },
+      withErrorBoundary(runSafeQuerySchema, runSafeQuery, context)
+    );
+  }
 
   return server;
 };

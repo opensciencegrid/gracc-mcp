@@ -6,6 +6,7 @@ import {
   assertAllowedIndex,
   assertSupportedDateField,
   assertSupportedMetricIds,
+  assertTimeZone,
   normalizeFilters,
   validateDateRange,
   validateTimeSeriesInterval
@@ -73,7 +74,7 @@ export const timeSeriesUsage = async (
   const filters = normalizeFilters(args.filters ?? {}, context.config);
   const metricId = assertSupportedMetricIds([args.metric ?? "core_hours"])[0];
   validateTimeSeriesInterval(range.start, range.end, args.interval, context.config);
-  const timeZone = args.time_zone ?? "UTC";
+  const timeZone = assertTimeZone(args.time_zone ?? "UTC");
 
   const response = await context.client.search(index, buildTimeSeriesQuery({
     start: range.start,

@@ -20,17 +20,23 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.12.3",
+    "@modelcontextprotocol/sdk": "^1.32.2",
     "dotenv": "^16.6.1",
     "express": "^5.1.0",
-    "zod": "^3.25.76"
+    "express-rate-limit": "^8.7.3",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@types/express": "^5.0.3",
     "@types/node": "^24.9.1",
+    "@types/supertest": "^7.2.1",
     "supertest": "^7.1.4",
     "tsx": "^4.20.6",
     "typescript": "^5.9.3",
     "vitest": "^3.2.4"
+  },
+  "overrides": {
+    "hono": "4.13.16",
+    "@hono/node-server": "2.1.6"
   }
 }

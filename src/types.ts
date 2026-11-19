@@ -79,9 +79,27 @@ export interface SafetyLimits {
   maxSafeQuerySize: number;
   maxSafeQueryFrom: number;
   maxSourceFields: number;
+  maxSafeQueryAggs: number;
+  maxSafeQueryBuckets: number;
+  maxBoolDepth: number;
+  maxQueryClauses: number;
   maxResultBytes: number;
   requestTimeoutMs: number;
   retryCount: number;
+}
+
+export interface UpstreamLimits {
+  maxConcurrent: number;
+  maxQueued: number;
+  maxResponseBytes: number;
+  cacheTtlSeconds: number;
+  cacheMaxBytes: number;
+}
+
+export interface RateLimitConfig {
+  windowMs: number;
+  /** Requests per client IP per window. 0 disables rate limiting. */
+  max: number;
 }
 
 export interface ServerConfig {
@@ -90,6 +108,11 @@ export interface ServerConfig {
   allowedIndices: string[];
   httpHost: string;
   httpPort: number;
+  enableSafeQuery: boolean;
+  /** Passed to Express "trust proxy": false, true, a hop count, or a subnet list. */
+  trustProxy: boolean | number | string;
+  rateLimit: RateLimitConfig;
+  upstream: UpstreamLimits;
   safety: SafetyLimits;
 }
 

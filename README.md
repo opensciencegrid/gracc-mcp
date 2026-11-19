@@ -76,26 +76,34 @@ Returns concise notes, caveats, and source references derived from public GRACC 
 
 ### `run_safe_query`
 
-Expert tool for constrained raw `_search` access.
+Expert tool for constrained raw `_search` access. It can be turned off with `GRACC_ENABLE_SAFE_QUERY=false`.
+
+The caller's JSON is never forwarded. The server validates each part and builds a fresh request from it, so any key it does not recognize is rejected rather than passed through to GRACC.
+
+Requirements:
+
+- `query` is required and must contain a `range` on `EndTime` or `@timestamp` with both a lower (`gte`/`gt`) and upper (`lt`/`lte`) bound, either as the top-level query or inside `bool.filter`. A range inside `must_not` does not count.
+- The bounded range must be at most `GRACC_MAX_RANGE_DAYS` long.
+- Date values must be strict ISO 8601 (`2026-04-01` or `2026-04-01T12:00:00Z`). Epoch numbers and date math such as `now-7d` are rejected.
 
 It only allows:
 
 - allowlisted index selection
-- allowlisted fields
-- read-only `_search`
-- term, terms, range, and bool filter queries
-- safe aggregations such as `sum`, `value_count`, `terms`, and `date_histogram`
+- allowlisted fields (ids such as `vo_name` are resolved to field names such as `VOName`)
+- `term`, `terms` (at most 25 values), `range`, and `bool` with `filter`/`must_not` (at most 3 levels deep, 32 clauses total)
+- `terms` aggregations with `field`, `size` (at most `GRACC_MAX_TOP_N`), and `order` (`_count`, `_key`, or a child metric aggregation)
+- `date_histogram` aggregations with `field` (a date field that has a bounded range in the query), `calendar_interval` (`day`, `week`, `month`), and `time_zone`
+- `sum` (metric fields only) and `value_count` aggregations with `field`
+- at most 10 aggregations, nested at most 2 deep, with an estimated total of at most 10,000 buckets
+- `size` defaults to `0`; when hits are requested, `_source` is limited to allowlisted fields
 
 It rejects:
 
-- writes
-- updates
-- deletes
-- scripts
-- `query_string`
-- unsupported endpoints
-- unsupported query operators
-- unbounded result payloads
+- writes, updates, deletes, and endpoints other than `_search`
+- scripts anywhere, including inside aggregations
+- `query_string` and any other unsupported query operator
+- aggregation options such as `extended_bounds`, `min_doc_count`, `shard_size`, `include`, `exclude`, and `missing`
+- result payloads above `GRACC_MAX_RESULT_BYTES`
 
 ## Supported Indices
 
@@ -291,6 +299,22 @@ Important settings:
 - `GRACC_HTTP_HOST`
 - `GRACC_HTTP_PORT`
 
+Public deployment settings:
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `GRACC_ENABLE_SAFE_QUERY` | `true` | Register the expert `run_safe_query` tool. |
+| `GRACC_TRUST_PROXY` | `false` | Express `trust proxy` value. Set to the number of proxy hops (usually `1` behind an ingress) so rate limits use the real client IP. Avoid `true`, which lets clients spoof `X-Forwarded-For`. |
+| `GRACC_RATE_LIMIT_MAX` | `120` | HTTP requests per client IP per window. `0` disables rate limiting. |
+| `GRACC_RATE_LIMIT_WINDOW_MS` | `60000` | Rate limit window. |
+| `GRACC_MAX_CONCURRENT_UPSTREAM` | `4` | Maximum simultaneous requests to GRACC per process. |
+| `GRACC_MAX_QUEUED_UPSTREAM` | `32` | Requests allowed to wait for a slot; beyond this the tool returns a "busy" error. |
+| `GRACC_MAX_UPSTREAM_BYTES` | `1048576` | Largest GRACC response the server will read. |
+| `GRACC_CACHE_TTL_SECONDS` | `300` | How long identical queries are served from memory. `0` disables the cache. |
+| `GRACC_CACHE_MAX_BYTES` | `33554432` | Memory budget for the response cache. |
+
+Rate limits, the cache, and the concurrency cap are per process, so with N replicas GRACC can see up to N × `GRACC_MAX_CONCURRENT_UPSTREAM` concurrent requests. If the server sits behind a gateway that does not forward client IPs, every request shares one rate limit bucket. In that case, raise `GRACC_RATE_LIMIT_MAX` or set it to `0` and limit at the gateway.
+
 ## Safety Model
 
 This server is intentionally read-only.
@@ -300,11 +324,15 @@ Core protections:
 - only `_search` is used
 - default index allowlist is explicit
 - no write or admin APIs are implemented
-- required date ranges for analytical tools
+- required date ranges for analytical tools, in strict ISO 8601 and converted to UTC before they are sent upstream, so JavaScript and OpenSearch cannot disagree about what a date means
 - hard caps on date range, bucket count, top N, and raw query size
 - exact-match filters only in normal tools
-- `run_safe_query` validates structure before sending anything upstream
-- request timeout plus retry for transient failures
+- `run_safe_query` builds a fresh request from validated parts instead of forwarding the caller's JSON
+- per-IP rate limiting on the HTTP endpoint
+- a process-wide cap on concurrent GRACC requests, with a bounded wait queue
+- identical concurrent queries share one GRACC request, and successful responses are cached briefly
+- GRACC responses are read with a byte cap
+- request timeout; only connection failures and 429/502/503/504 responses are retried, with backoff. Query errors and timeouts are not retried, and a `Retry-After` longer than 5 seconds is not waited out
 - result payload size cap for `run_safe_query`
 
 ## Known Assumptions And Field Caveats

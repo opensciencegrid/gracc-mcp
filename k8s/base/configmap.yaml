@@ -15,3 +15,16 @@ data:
   GRACC_RETRY_COUNT: "2"
   GRACC_HTTP_HOST: 0.0.0.0
   GRACC_HTTP_PORT: "3333"
+  GRACC_ENABLE_SAFE_QUERY: "true"
+  # One proxy hop (the ingress or gateway) in front of the pod. Rate limits key
+  # on the client IP from X-Forwarded-For, so do not set this to "true".
+  GRACC_TRUST_PROXY: "1"
+  # Per client IP, per pod. Set to "0" if the gateway does not forward client
+  # IPs (every request would otherwise share one bucket).
+  GRACC_RATE_LIMIT_MAX: "120"
+  GRACC_RATE_LIMIT_WINDOW_MS: "60000"
+  GRACC_MAX_CONCURRENT_UPSTREAM: "4"
+  GRACC_MAX_QUEUED_UPSTREAM: "32"
+  GRACC_MAX_UPSTREAM_BYTES: "1048576"
+  GRACC_CACHE_TTL_SECONDS: "300"
+  GRACC_CACHE_MAX_BYTES: "33554432"

@@ -1,7 +1,7 @@
 import * as z from "zod/v4";
 
 import { assertAllowedIndex } from "../validation/common.js";
-import { validateSafeQueryBody } from "../validation/safeQuery.js";
+import { buildSafeQueryBody } from "../validation/safeQuery.js";
 import { ToolContext } from "./shared.js";
 
 export const runSafeQueryInputShape = {
@@ -9,7 +9,7 @@ export const runSafeQueryInputShape = {
   body: z
     .record(z.string(), z.unknown())
     .describe(
-      "Constrained OpenSearch _search body. Supports only allowlisted fields, term/terms/range/bool filters, and safe aggregations."
+      "Constrained OpenSearch _search body. query is required and must include a bounded ISO 8601 range on EndTime or @timestamp (top level or in bool.filter). Supports term/terms/range/bool(filter, must_not) clauses and terms/date_histogram/sum/value_count aggregations on allowlisted fields. size defaults to 0."
     )
 };
 
@@ -36,9 +36,9 @@ export const runSafeQuery = async (
   context: ToolContext
 ) => {
   const index = assertAllowedIndex(context.config, args.index);
-  validateSafeQueryBody(args.body, context.config);
+  const body = buildSafeQueryBody(args.body, context.config);
 
-  const response = await context.client.search(index, args.body);
+  const response = await context.client.search(index, body);
   const payload = {
     index,
     took: response.took,

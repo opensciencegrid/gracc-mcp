@@ -115,6 +115,8 @@ When adding a new dimension or metric:
 - `list_dimensions` should remain discovery-oriented and side-effect free.
 - `query_usage_summary`, `top_n_entities`, and `time_series_usage` should never accept arbitrary query DSL.
 - `run_safe_query` must remain strictly constrained and should be treated as an expert escape hatch, not the default interface.
+- `run_safe_query` must keep building a fresh request body from validated parts (`buildSafeQueryBody`). Never forward the caller's JSON or pass unknown keys through; add new options only to an explicit per-clause allowlist with tests.
+- Dates must be parsed with `parseIsoInstant` and sent upstream as normalized UTC ISO strings, never as the raw input.
 
 ## Transport Rules
 
