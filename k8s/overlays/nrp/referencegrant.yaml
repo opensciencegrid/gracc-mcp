@@ -1,0 +1,23 @@
+# Lets the MCPRoute in nrp-llm (the gateway's namespace) reference the
+# gracc-mcp Service in this namespace. Gateway API requires the *referent's*
+# owner to opt in, so this lives here rather than with the gateway config.
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: ReferenceGrant
+metadata:
+  name: mcp-gateway-to-gracc
+  namespace: unl-weitzel
+spec:
+  from:
+    - group: aigateway.envoyproxy.io
+      kind: MCPRoute
+      namespace: nrp-llm
+    # UNVERIFIED: the AI Gateway controller translates MCPRoute into an
+    # HTTPRoute internally, so it may evaluate the grant as HTTPRoute instead.
+    # If the MCPRoute reports a ref-not-permitted condition, uncomment this.
+    # - group: gateway.networking.k8s.io
+    #   kind: HTTPRoute
+    #   namespace: nrp-llm
+  to:
+    - group: ""
+      kind: Service
+      name: gracc-mcp

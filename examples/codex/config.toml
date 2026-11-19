@@ -1,0 +1,9 @@
+[mcp_servers.gracc]
+command = "node"
+args = ["/absolute/path/to/gracc-mcp/dist/index.js"]
+cwd = "/absolute/path/to/gracc-mcp"
+
+[mcp_servers.gracc.env]
+GRACC_BASE_URL = "https://gracc.opensciencegrid.org/q"
+GRACC_DEFAULT_INDEX = "gracc.osg.summary"
+GRACC_ALLOWED_INDICES = "gracc.osg.summary"

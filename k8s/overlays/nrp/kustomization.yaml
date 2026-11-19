@@ -1,0 +1,25 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# NRP / Nautilus deployment, fronted by the Envoy AI Gateway MCP listener at
+# https://mcp.nrp-nautilus.io/unl-weitzel/gracc
+#
+# The namespace already exists and is not created here.
+namespace: unl-weitzel
+
+resources:
+  - ../../base
+  - referencegrant.yaml
+
+images:
+  - name: ghcr.io/example/gracc-mcp-server
+    # REPLACE with the real published image. The repo has no git remote yet, so
+    # .github/workflows/docker.yml has never run and nothing is published.
+    newName: ghcr.io/REPLACE-ME/gracc-mcp-server
+    newTag: latest
+
+# The HTTP transport is stateless (sessionIdGenerator: undefined in
+# src/http/app.ts), so replicas scale freely. The gateway owns MCP sessions.
+replicas:
+  - name: gracc-mcp
+    count: 2

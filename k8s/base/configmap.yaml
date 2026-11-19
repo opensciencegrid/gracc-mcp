@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: gracc-mcp-config
+data:
+  GRACC_BASE_URL: https://gracc.opensciencegrid.org/q
+  GRACC_DEFAULT_INDEX: gracc.osg.summary
+  GRACC_ALLOWED_INDICES: gracc.osg.summary
+  GRACC_MAX_RANGE_DAYS: "366"
+  GRACC_MAX_BUCKETS: "366"
+  GRACC_MAX_TOP_N: "25"
+  GRACC_MAX_SAFE_QUERY_SIZE: "25"
+  GRACC_MAX_RESULT_BYTES: "262144"
+  GRACC_TIMEOUT_MS: "30000"
+  GRACC_RETRY_COUNT: "2"
+  GRACC_HTTP_HOST: 0.0.0.0
+  GRACC_HTTP_PORT: "3333"

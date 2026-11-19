@@ -1,0 +1,25 @@
+{
+  "took": 2,
+  "timed_out": false,
+  "_shards": {
+    "total": 6,
+    "successful": 6,
+    "failed": 0
+  },
+  "hits": {
+    "total": {
+      "value": 68,
+      "relation": "eq"
+    },
+    "max_score": 0,
+    "hits": []
+  },
+  "aggregations": {
+    "jobs": {
+      "value": 20626
+    },
+    "walltime": {
+      "value": 41323.43916666666
+    }
+  }
+}

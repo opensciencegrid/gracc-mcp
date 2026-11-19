@@ -1,0 +1,11 @@
+.git
+.env
+dist
+node_modules
+coverage
+tests
+examples
+README.md
+AGENTS.md
+k8s
+npm-debug.log*

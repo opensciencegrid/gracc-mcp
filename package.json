@@ -1,0 +1,36 @@
+{
+  "name": "gracc-mcp-server",
+  "version": "0.1.0",
+  "description": "Read-only MCP server for GRACC accounting data via the public OpenSearch-compatible endpoint.",
+  "type": "module",
+  "private": true,
+  "engines": {
+    "node": ">=20.11"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "clean": "rm -rf dist",
+    "dev:http": "tsx src/http-server.ts",
+    "dev:stdio": "tsx src/index.ts",
+    "lint": "tsc --noEmit",
+    "start:http": "node dist/http-server.js",
+    "start:stdio": "node dist/index.js",
+    "test": "vitest run",
+    "test:live": "GRACC_LIVE_TESTS=1 vitest run tests/live",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.3",
+    "dotenv": "^16.6.1",
+    "express": "^5.1.0",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.3",
+    "@types/node": "^24.9.1",
+    "supertest": "^7.1.4",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.4"
+  }
+}

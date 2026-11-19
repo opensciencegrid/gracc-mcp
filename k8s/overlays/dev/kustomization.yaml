@@ -1,0 +1,13 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: gracc-mcp
+
+resources:
+  - ../../base
+  - namespace.yaml
+
+images:
+  - name: ghcr.io/example/gracc-mcp-server
+    newName: ghcr.io/your-org/gracc-mcp-server
+    newTag: latest

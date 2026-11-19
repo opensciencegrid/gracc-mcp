@@ -1,0 +1,72 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gracc-mcp
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: gracc-mcp
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: gracc-mcp
+        app.kubernetes.io/component: accounting-query
+    spec:
+      containers:
+        - name: gracc-mcp
+          image: ghcr.io/example/gracc-mcp-server:latest
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef:
+                name: gracc-mcp-config
+          ports:
+            - name: mcp-http
+              containerPort: 3333
+          readinessProbe:
+            tcpSocket:
+              port: mcp-http
+            initialDelaySeconds: 3
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: mcp-http
+            initialDelaySeconds: 10
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 250m
+              memory: 256Mi
+        - name: mcpo
+          image: ghcr.io/open-webui/mcpo:main
+          imagePullPolicy: IfNotPresent
+          args:
+            - --port
+            - "8000"
+            - --server-type
+            - streamable-http
+            - --
+            - http://127.0.0.1:3333/mcp
+          ports:
+            - name: openapi-http
+              containerPort: 8000
+          readinessProbe:
+            tcpSocket:
+              port: openapi-http
+            initialDelaySeconds: 3
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: openapi-http
+            initialDelaySeconds: 10
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: 25m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
