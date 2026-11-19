@@ -237,7 +237,7 @@ Typical published tags include:
 - version tags such as `v1.2.3`
 - commit SHA tags
 
-If you want Kubernetes to consume the GitHub Actions-built image, point the overlay image override at that GHCR package in [k8s/overlays/dev/kustomization.yaml](/Users/derekweitzel/git/gracc-mcp/k8s/overlays/dev/kustomization.yaml).
+If you want Kubernetes to consume the GitHub Actions-built image, point the overlay image override at that GHCR package in [k8s/overlays/dev/kustomization.yaml](k8s/overlays/dev/kustomization.yaml).
 
 ### Kubernetes With Kustomize
 
@@ -258,7 +258,7 @@ docker build -t ghcr.io/your-org/gracc-mcp-server:latest .
 docker push ghcr.io/your-org/gracc-mcp-server:latest
 ```
 
-Then update the image override in [k8s/overlays/dev/kustomization.yaml](/Users/derekweitzel/git/gracc-mcp/k8s/overlays/dev/kustomization.yaml) and deploy:
+Then update the image override in [k8s/overlays/dev/kustomization.yaml](k8s/overlays/dev/kustomization.yaml) and deploy:
 
 ```bash
 kubectl apply -k k8s/overlays/dev
