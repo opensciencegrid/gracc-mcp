@@ -13,10 +13,10 @@ resources:
 
 images:
   - name: ghcr.io/example/gracc-mcp-server
-    # REPLACE with the real published image. The repo has no git remote yet, so
-    # .github/workflows/docker.yml has never run and nothing is published.
-    newName: ghcr.io/REPLACE-ME/gracc-mcp-server
-    newTag: latest
+    # Published by .github/workflows/docker.yml. Pinned to a commit tag because
+    # the base uses imagePullPolicy: IfNotPresent.
+    newName: ghcr.io/opensciencegrid/gracc-mcp-server
+    newTag: sha-449ae15
 
 # The HTTP transport is stateless (sessionIdGenerator: undefined in
 # src/http/app.ts), so replicas scale freely. The gateway owns MCP sessions.

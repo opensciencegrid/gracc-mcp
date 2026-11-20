@@ -4,6 +4,11 @@
   "description": "Read-only MCP server for GRACC accounting data via the public OpenSearch-compatible endpoint.",
   "type": "module",
   "private": true,
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/opensciencegrid/gracc-mcp.git"
+  },
   "engines": {
     "node": ">=20.11"
   },

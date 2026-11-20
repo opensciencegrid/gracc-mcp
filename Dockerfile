@@ -18,7 +18,10 @@ COPY package.json package-lock.json ./
 RUN npm ci --omit=dev
 
 FROM node:20-bookworm-slim AS runtime
-ENV NODE_ENV=production
+# The app defaults to 127.0.0.1 for local runs; inside a container it must
+# listen on all interfaces or published ports cannot reach it.
+ENV NODE_ENV=production \
+    GRACC_HTTP_HOST=0.0.0.0
 WORKDIR /app
 
 COPY package.json package-lock.json ./

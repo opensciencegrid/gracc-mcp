@@ -1,5 +1,8 @@
 # GRACC MCP Server
 
+[![Docker](https://github.com/opensciencegrid/gracc-mcp/actions/workflows/docker.yml/badge.svg)](https://github.com/opensciencegrid/gracc-mcp/actions/workflows/docker.yml)
+[![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
+
 Read-only Model Context Protocol (MCP) server for GRACC, the OSG accounting system.
 
 This server gives MCP-compatible AI clients safe access to public GRACC accounting data through the documented public OpenSearch-compatible endpoint:
@@ -14,6 +17,30 @@ The implementation is intentionally conservative:
 - hard validation and safety caps
 - standards-compliant MCP tool definitions
 - portable STDIO-first design, with optional Streamable HTTP
+
+## Quick Start
+
+Run the published image:
+
+```bash
+docker run --rm -p 3333:3333 ghcr.io/opensciencegrid/gracc-mcp-server:latest
+```
+
+Then point any MCP client that supports Streamable HTTP at `http://localhost:3333/mcp`. For example, with Claude Code:
+
+```bash
+claude mcp add --transport http gracc http://localhost:3333/mcp
+```
+
+To run without a network listener, build from source and register the server over STDIO instead; see [Setup](#setup) and [Other MCP Client Notes](#other-mcp-client-notes).
+
+Questions to try:
+
+- "Which VOs used the most core hours in October 2026?"
+- "Show weekly GPU hours for the last three months."
+- "How many jobs did LIGO run last week, and how many core hours did they use?"
+
+More examples are in [examples/prompts.md](examples/prompts.md). A good first call for a new client is `list_dimensions`, which returns the valid filter, grouping and metric ids.
 
 ## What GRACC Is
 
@@ -207,15 +234,19 @@ Default URL:
 
 ### Docker Image
 
-Build a container image that runs the MCP server in HTTP mode:
+Published image: `ghcr.io/opensciencegrid/gracc-mcp-server`
 
 ```bash
-docker build -t ghcr.io/your-org/gracc-mcp-server:latest .
+docker run --rm -p 3333:3333 ghcr.io/opensciencegrid/gracc-mcp-server:latest
 ```
 
-The container listens on:
+The image runs the HTTP transport and listens on `0.0.0.0:3333` (path `/mcp`). Pass any `GRACC_*` setting from [Configuration](#configuration) with `-e`, for example `-e GRACC_RATE_LIMIT_MAX=60`.
 
-- `3333` for native MCP Streamable HTTP
+To build it yourself:
+
+```bash
+docker build -t gracc-mcp-server .
+```
 
 ### GitHub Actions Docker Build
 
@@ -226,39 +257,32 @@ It does two things:
 - builds the Docker image on every push, pull request, and manual workflow run
 - pushes the image to GitHub Container Registry on pushes to the default branch and on tag pushes
 
-Published image name:
+Published image: `ghcr.io/opensciencegrid/gracc-mcp-server`
 
-- `ghcr.io/<github-owner>/gracc-mcp-server`
+Published tags:
 
-Typical published tags include:
+- `latest` and `main` on the default branch
+- `1.2.3` and `1.2` when a `v1.2.3` git tag is pushed
+- `sha-<commit>` for every published commit
 
-- `latest` on the default branch
-- branch names
-- version tags such as `v1.2.3`
-- commit SHA tags
-
-If you want Kubernetes to consume the GitHub Actions-built image, point the overlay image override at that GHCR package in [k8s/overlays/dev/kustomization.yaml](k8s/overlays/dev/kustomization.yaml).
+Pin a `sha-<commit>` or version tag for deployments rather than `latest`.
 
 ### Kubernetes With Kustomize
 
-Kubernetes manifests live under:
+The manifests under `k8s/` are a generic example you can adapt:
 
-- `k8s/base`
-- `k8s/overlays/dev`
+- `k8s/base`: Deployment, ConfigMap and two ClusterIP Services
+- `k8s/overlays/dev`: a standalone `gracc-mcp` namespace using the published image
+- `k8s/overlays/nrp`: an NRP Nautilus deployment behind the Envoy AI Gateway
 
-The deployment runs two containers in one pod:
+OSG's hosted instance is deployed from separate cluster configuration, not from these overlays.
+
+The example deployment runs two containers in one pod:
 
 - `gracc-mcp` on port `3333` for the native MCP endpoint
-- `mcpo` on port `8000` as an MCP-to-OpenAPI bridge for Open WebUI and other OpenAPI clients
+- `mcpo` on port `8000` as an optional MCP-to-OpenAPI bridge for Open WebUI and other OpenAPI clients. Remove it if you only need MCP.
 
-Build and push your image first:
-
-```bash
-docker build -t ghcr.io/your-org/gracc-mcp-server:latest .
-docker push ghcr.io/your-org/gracc-mcp-server:latest
-```
-
-Then update the image override in [k8s/overlays/dev/kustomization.yaml](k8s/overlays/dev/kustomization.yaml) and deploy:
+Deploy:
 
 ```bash
 kubectl apply -k k8s/overlays/dev
@@ -348,14 +372,14 @@ Core protections:
 
 - `@timestamp` is available from the public mappings but appears to be ingest-oriented, not job-end-oriented.
 - `processor_count_sum` is a sum of `Processors` across matching summary documents, not a distinct hardware inventory count.
-- `CommonName` may be high-cardinality and is often less useful for broad analytics than VO, project, or site fields.
+- `CommonName` may be high-cardinality and is often less useful for broad analytics than VO, project, or site fields. It can also be sensitive from a privacy perspective even though the endpoint is public, so prefer higher-level dimensions where they answer the question.
 - Public field caps showed some legacy non-`gracc` indices with different field types; this server avoids them.
 
-### TODOs and verification notes
+### Open questions
 
-- TODO: Confirm whether `CommonName` is the best default “submitter” dimension for every downstream client use case. Verify by inspecting GRACC dashboards or comparing with site stakeholder expectations.
-- TODO: Confirm whether additional dimensions like `PayloadSiteName` or `ExecutePool` should be promoted into the initial allowlist. Verify by checking current public dashboards or usage examples.
-- TODO: If future public docs standardize alternate summary aliases, update `GRACC_ALLOWED_INDICES` and the schema registry together rather than expanding query freedom ad hoc.
+- Is `CommonName` the best default "submitter" dimension for every downstream use? Checking GRACC dashboards or asking site stakeholders would settle it.
+- Should dimensions like `PayloadSiteName` or `ExecutePool` join the allowlist? Current public dashboards and usage examples would show whether they are needed.
+- If public docs standardize other summary aliases, update `GRACC_ALLOWED_INDICES` and the schema registry together rather than loosening query validation.
 
 ## Client Compatibility Notes
 
@@ -415,6 +439,20 @@ See `examples/codex/config.toml` for a fuller example.
 
 See `examples/claude-desktop-config.json` for a STDIO registration example.
 
+### Claude Code
+
+Over HTTP, with the server or container running:
+
+```bash
+claude mcp add --transport http gracc http://localhost:3333/mcp
+```
+
+Over STDIO, after `npm run build`:
+
+```bash
+claude mcp add gracc -- node /absolute/path/to/gracc-mcp/dist/index.js
+```
+
 ### ChatGPT Or Other MCP-Compatible Clients
 
 Use either:
@@ -431,6 +469,7 @@ If a client has strict schema handling, prefer calling `list_dimensions` first a
 ├── .dockerignore
 ├── AGENTS.md
 ├── Dockerfile
+├── LICENSE
 ├── README.md
 ├── examples/
 │   ├── claude-desktop-config.json
@@ -466,3 +505,7 @@ If a client has strict schema handling, prefer calling `list_dimensions` first a
 - [GRACC Operations](https://osg-htc.org/gracc/ops/services/)
 - [MCP TypeScript SDK](https://ts.sdk.modelcontextprotocol.io/)
 - [Model Context Protocol](https://modelcontextprotocol.io/)
+
+## License
+
+Licensed under the [Apache License, Version 2.0](LICENSE).

@@ -9,5 +9,7 @@ resources:
 
 images:
   - name: ghcr.io/example/gracc-mcp-server
-    newName: ghcr.io/your-org/gracc-mcp-server
+    newName: ghcr.io/opensciencegrid/gracc-mcp-server
+    # Pin a sha-<commit> tag for anything long-lived; the base uses
+    # imagePullPolicy: IfNotPresent, so "latest" will not refresh on its own.
     newTag: latest
